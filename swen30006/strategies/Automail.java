@@ -1,23 +1,23 @@
 package strategies;
 
 import automail.IMailDelivery;
-import automail.Robot;
+import automail.RobotTeam;
 
 public class Automail {
 	      
-    public Robot[] robots;
+    public RobotTeam[] teams;
     public IMailPool mailPool;
     
-    public Automail(IMailPool mailPool, IMailDelivery delivery, int numRobots) {
+    public Automail(IMailPool mailPool, IMailDelivery delivery, int numRobotTeams) {
     	// Swap between simple provided strategies and your strategies here
     	    	
     	/** Initialize the MailPool */
     	
     	this.mailPool = mailPool;
     	
-    	/** Initialize robots */
-    	robots = new Robot[numRobots];
-    	for (int i = 0; i < numRobots; i++) robots[i] = new Robot(delivery, mailPool);
+    	/** Initialize teams */
+    	teams = new RobotTeam[numRobotTeams];
+    	for (int i = 0; i < numRobotTeams; i++) teams[i] = new RobotTeam(delivery, mailPool);
     }
     
 }
