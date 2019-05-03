@@ -52,6 +52,18 @@ public class robotTeam {
      * @param mailPool is the source of mail items
      */
     
+    public RobotTeam(IMailDelivery delivery, IMailPool mailPool, Robot[] robots){
+    	id = "T" + hashCode();
+        // current_state = TeamState.WAITING;
+    	current_state = TeamState.RETURNING;
+        current_floor = Building.MAILROOM_LOCATION;
+        this.delivery = delivery;
+        this.mailPool = mailPool;
+        this.receivedDispatch = false;
+        this.deliveryCounter = 0;
+        this.robots = robots;
+    }
+	
     public void setWeight() {
     	switch(teamSize) {
     		case 1:
