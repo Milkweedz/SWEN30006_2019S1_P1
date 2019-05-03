@@ -69,6 +69,7 @@ public class RobotTeam {
         this.deliveryCounter = 0;
         this.robots = robots;
         this.robotloader = robotloader;
+	this.setWeight();
         this.setSpeed();
     }
     
@@ -196,7 +197,8 @@ public class RobotTeam {
                 		RobotTeam Retur_Team = createNewRobotTeam(this.getDeliveryItem(), 
                 				this.getMailPool(),this.getRobotLoader(), new_robotTeam);
                 		try {
-							Retur_Team.addToHand(Retur_Team.robots.get(i).getTube());
+							Retur_Team.addToHand(Retur_Team.robots.get(0).getTube());
+							Retur_Team.robots.get(0).removeTube();
 						} catch (ItemTooHeavyException e) {
 						}
                 		Automail.robotTeam.add(Retur_Team);
