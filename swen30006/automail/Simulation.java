@@ -66,11 +66,11 @@ public class Simulation {
 		Clock.LAST_DELIVERY_TIME = Integer.parseInt(automailProperties.getProperty("Last_Delivery_Time"));
         System.out.printf("Last_Delivery_Time: %5d%n", Clock.LAST_DELIVERY_TIME);
 		// Robots
-		int teams = Integer.parseInt(automailProperties.getProperty("Robots"));
-		System.out.print("Robots: "); System.out.println(teams);
-		assert(teams > 0);
+		int robots = Integer.parseInt(automailProperties.getProperty("Robots"));
+		System.out.print("Robots: "); System.out.println(robots);
+		assert(robots > 0);
 		// MailPool
-		IMailPool mailPool = new MailPool(teams);
+		IMailPool mailPool = new MailPool(robots);
 
 		// End properties
 		
@@ -91,7 +91,7 @@ public class Simulation {
         }
         Integer seed = seedMap.get(true);
         System.out.printf("Seed: %s%n", seed == null ? "null" : seed.toString());
-        Automail automail = new Automail(mailPool, new ReportDelivery(), teams);
+        Automail automail = new Automail(mailPool, new ReportDelivery(), robots);
         MailGenerator mailGenerator = new MailGenerator(MAIL_TO_CREATE, MAIL_MAX_WEIGHT, automail.mailPool, seedMap);
         
         /** Initiate all the mail */
@@ -101,8 +101,8 @@ public class Simulation {
         	// System.out.printf("Delivered: %4d; Created: %4d%n", MAIL_DELIVERED.size(), mailGenerator.MAIL_TO_CREATE);
             mailGenerator.step();
             try {
-                automail.mailPool.step();
-				for (int i=0; i<teams; i++) automail.teams[i].step();
+                automail.robotLoader.step();
+//				for (int i=0; i<teams; i++) automail.teams[i].step();
 			} catch (ExcessiveDeliveryException|ItemTooHeavyException e) {
 				e.printStackTrace();
 				System.out.println("Simulation unable to complete.");

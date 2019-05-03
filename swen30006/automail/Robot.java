@@ -8,5 +8,8 @@ public class Robot {
         id = "R" + hashCode();
     }
 
-
+	public void addToTube(MailItem mailItem){
+		assert(tube == null);
+		tube = mailItem;
+	}
 }

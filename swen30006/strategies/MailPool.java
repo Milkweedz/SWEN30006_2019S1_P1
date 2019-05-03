@@ -14,10 +14,10 @@ public class MailPool implements IMailPool {
 
 	private RobotLoader robotLoader;
 
-	private class Item {
+	public class Item {
 		int priority;
 		int destination;
-		MailItem mailItem;
+		public MailItem mailItem;
 		// Use stable sort to keep arrival time relative positions
 		
 		public Item(MailItem mailItem) {
@@ -47,7 +47,7 @@ public class MailPool implements IMailPool {
 	private LinkedList<Item> pool;
 //	private LinkedList<RobotTeam> teams;
 
-	public MailPool(int nteams){
+	public MailPool(int nRobots){
 		// Start empty
 		pool = new LinkedList<Item>();
 //		teams = new LinkedList<RobotTeam>();
@@ -59,16 +59,21 @@ public class MailPool implements IMailPool {
 		pool.sort(new ItemComparator());
 	}
 	
+	//@Override
+//	public void step() throws ItemTooHeavyException {
+//		try{
+//		    ListIterator<Item> poolIterator = pool.listIterator();
+//		    if (poolIterator.hasNext()){
+//		        robotLoader.loadRobotTeam(poolIterator);
+//            }
+//		} catch (Exception e) {
+//            throw e;
+//        }
+//	}
+
 	@Override
-	public void step() throws ItemTooHeavyException {
-		try{
-		    ListIterator<Item> i = pool.listIterator();
-		    while (i.hasNext()){
-		        robotLoader.step(i.next().mailItem);
-            }
-		} catch (Exception e) { 
-            throw e; 
-        } 
+	public ListIterator<Item> getPool(){
+		return pool.listIterator();
 	}
 
 }

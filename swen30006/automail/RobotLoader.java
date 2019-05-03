@@ -1,9 +1,11 @@
 package automail;
 
+import exceptions.ExcessiveDeliveryException;
 import exceptions.ItemTooHeavyException;
 import strategies.IMailPool;
 import strategies.MailPool;
 
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
@@ -16,46 +18,126 @@ public class RobotLoader {
     private IMailPool mailPool;
     private IMailDelivery delivery;
 
-    private LinkedList<Robot> robots;
+    private LinkedList<Robot> robots;   // free robots without team
     private LinkedList<RobotTeam> teams;
+    private LinkedList<RobotTeam> finishedTeams;    // teams that finish their hand item delivery
+    private LinkedList<RobotTeam> idleTeams;        // teams in mailroom waiting for mail
 
-    public void step(MailItem mailItem) throws ItemTooHeavyException {
+    private static RobotLoader instance = null;
+
+    public static RobotLoader getInstance(IMailDelivery delivery, IMailPool mailPool, Robot[] robots){
+        if (instance == null) {
+            instance = new RobotLoader(delivery, mailPool, robots);
+        }
+        return instance;
+    }
+
+    public RobotLoader(IMailDelivery delivery, IMailPool mailPool, Robot[] robots){
+
+        this.mailPool = mailPool;
+        this.delivery = delivery;
+        this.robots = new LinkedList<Robot>();
+        this.teams = new LinkedList<RobotTeam>();
+        this.finishedTeams = new LinkedList<RobotTeam>();
+        this.idleTeams = new LinkedList<RobotTeam>();
+
+        for (Robot robot : robots){
+            this.robots.add(robot);
+        }
+    }
+
+    public void loadRobotTeam(ListIterator<Robot> r) throws ItemTooHeavyException {
         try{
-            if (enoughRobots(mailItem.weight)){
-                Robot[] teamMembers = new Robot[numBotsNeeded(mailItem.weight)];
-                for (int i=0; i<teamMembers.length; i++){
-                    teamMembers[i] = robots.remove();
+            ListIterator<MailPool.Item> m = mailPool.getPool();
+            System.out.println("DEBUG" + Clock.Time());
+            if (m.hasNext()) {
+                MailItem mail = m.next().mailItem;
+
+                if (enoughRobots(mail.weight)){
+                    Robot[] teamMembers = new Robot[numBotsNeeded(mail.weight)];
+                    for (int i=0; i<teamMembers.length; i++){
+                        teamMembers[i] = r.next();
+                        r.remove();
+                    }
+                    RobotTeam team = new RobotTeam(delivery, this, teamMembers);
+                    assert(team.isEmpty());
+                    team.addToHand(mail); // hand first as we want higher priority delivered first
+                    m.remove();
+
+                    for (Robot robot : team.robots){
+                        if (!m.hasNext()) break;
+                        mail = m.next().mailItem;
+                        if (mail.weight <= INDIVIDUAL_MAX_WEIGHT) {
+                            robot.addToTube(mail);
+                            m.remove();
+                        }
+                    }
+
+                    teams.add(team);
+                    team.dispatch(); // send the team off if it has any items to deliver
+                    //r.remove();       // remove from mailPool queue
                 }
-                RobotTeam robotTeam = new RobotTeam(delivery, mailPool, teamMembers);
+            }
+            else {
+                r.next();
             }
         } catch (Exception e) {
             throw e;
         }
     }
 
-    private void loadRobotTeam(RobotTeam team) throws ItemTooHeavyException {
-        assert(team.isEmpty());
-        // System.out.printf("P: %3d%n", pool.size());
-        ListIterator<MailPool.Item> j = pool.listIterator();
-        if (pool.size() > 0) {
-            try {
-                team.addToHand(j.next().mailItem); // hand first as we want higher priority delivered first
-                j.remove();
-                if (pool.size() > 0) {
-                    team.addToTube(j.next().mailItem);
-                    j.remove();
+    public void step() throws ExcessiveDeliveryException, ItemTooHeavyException {
+        try {
+            ListIterator<RobotTeam> ft = this.finishedTeams.listIterator();
+            while (ft.hasNext()){
+                RobotTeam oldTeam = ft.next();
+                ft.remove();
+                for (Robot robot : oldTeam.robots){
+                    Robot[] teamMembers = new Robot[1];
+                    teamMembers[0] = robot;
+                    RobotTeam newTeam = new RobotTeam(delivery, this, teamMembers);
+                    teams.push(newTeam);
+                    newTeam.tubeToHand();
+//                    newTeam.dispatch();
                 }
-                team.dispatch(); // send the team off if it has any items to deliver
-                i.remove();       // remove from mailPool queue
-            } catch (Exception e) {
-                throw e;
             }
+
+            ListIterator<Robot> r = this.robots.listIterator();
+            while (r.hasNext()) {
+                loadRobotTeam(r);
+            }
+
+            ListIterator<RobotTeam> t = this.teams.listIterator();
+            if (t.hasNext()){
+                t.next().step();
+            }
+        } catch (Exception e) {
+            throw e;
         }
     }
 
-    public void registerWaiting(RobotTeam team) { // assumes won't be there already
-        teams.add(team);
+    public void registerWaiting(RobotTeam team) { // at mailroom
+        teams.remove(team);
+
+        for (Robot robot : team.robots){
+            robots.add(robot);
+        }
     }
+
+    public void registerFinished(RobotTeam team) { // assumes won't be there already
+        teams.remove(team);
+        finishedTeams.add(team);
+    }
+
+//    public void splitTeam(RobotTeam oldTeam){
+//        for (Robot robot : oldTeam.robots){
+//            Robot[] teamMembers = new Robot[1];
+//            teamMembers[0] = robot;
+//            RobotTeam newTeam = new RobotTeam(delivery, this, teamMembers);
+//            teams.push(newTeam);
+//            newTeam.dispatch();
+//        }
+//    }
 
 
     private int numBotsNeeded(int weight) {

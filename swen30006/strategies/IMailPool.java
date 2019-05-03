@@ -4,6 +4,8 @@ import automail.MailItem;
 import automail.RobotTeam;
 import exceptions.ItemTooHeavyException;
 
+import java.util.ListIterator;
+
 /**
  * addToPool is called when there are mail items newly arrived at the building to add to the MailPool or
  * if a robot returns with some undelivered items - these are added back to the MailPool.
@@ -21,7 +23,8 @@ public interface IMailPool {
     /**
      * load up any waiting robots with mailItems, if any.
      */
-	void step() throws ItemTooHeavyException;
+	//void step() throws ItemTooHeavyException;
+    ListIterator<MailPool.Item> getPool();
 
 
 }
