@@ -38,7 +38,7 @@ public class robotTeam {
     private MailItem deliveryItem = null;
     private MailItem tube = null;
     
-    private boolean dispatch;
+    private boolean recievedDispatch;
     
     private float max_weight;
     
@@ -53,6 +53,17 @@ public class robotTeam {
      * @param delivery governs the final delivery
      * @param mailPool is the source of mail items
      */
+    public RobotTeam(IMailDelivery delivery, IMailPool mailPool, Robot[] robots){
+    	id = "T" + hashCode();
+        // current_state = TeamState.WAITING;
+    	current_state = TeamState.RETURNING;
+        current_floor = Building.MAILROOM_LOCATION;
+        this.delivery = delivery;
+        this.mailPool = mailPool;
+        this.receivedDispatch = false;
+        this.deliveryCounter = 0;
+        this.robots = robots;
+}
     
     public void setTeamSize() {
     	this.teamSize = team.size();
@@ -79,7 +90,7 @@ public class robotTeam {
     
     
     public void dispatch() {
-    	dispatch = true;
+    	recievedDispatch = true;
     }
 
     /**
