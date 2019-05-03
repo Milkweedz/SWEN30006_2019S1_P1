@@ -38,6 +38,8 @@ public class robotTeam {
     private MailItem deliveryItem = null;
     private MailItem tube = null;
     
+    private boolean dispatch;
+    
     private float max_weight;
     
     private int deliveryCounter;
@@ -52,18 +54,10 @@ public class robotTeam {
      * @param mailPool is the source of mail items
      */
     
-    public RobotTeam(IMailDelivery delivery, IMailPool mailPool, Robot[] robots){
-    	id = "T" + hashCode();
-        // current_state = TeamState.WAITING;
-    	current_state = TeamState.RETURNING;
-        current_floor = Building.MAILROOM_LOCATION;
-        this.delivery = delivery;
-        this.mailPool = mailPool;
-        this.receivedDispatch = false;
-        this.deliveryCounter = 0;
-        this.robots = robots;
+    public void setTeamSize() {
+    	this.teamSize = team.size();
     }
-	
+    
     public void setWeight() {
     	switch(teamSize) {
     		case 1:
@@ -85,9 +79,7 @@ public class robotTeam {
     
     
     public void dispatch() {
-    	for(int i = 0; i < teamSize; i++) {
-    		team.get(i).dispatch();
-    	}
+    	dispatch = true;
     }
 
     /**
@@ -101,9 +93,12 @@ public class robotTeam {
 			/** If its current position is at the mailroom, then the robot should change state */
             if(current_floor == Building.MAILROOM_LOCATION){
             	if (tube != null) {
-            		mailPool.addToPool(tube);
-                    System.out.printf("T: %3d > old addToPool [%s]%n", Clock.Time(), tube.toString());
-                    tube = null;
+            		setTeamSize();
+            		for(int i; i < teamSize;i++) {
+            			mailPool.addToPool(team.get(i).get_tube());
+            			System.out.printf("T: %3d > old addToPool [%s]%n", Clock.Time(), team.get(i).get_tube().toString());
+            			tube = null;
+            		}
             	}
     			/** Tell the sorter the robot is ready */
             	/*mailPool.registerWaiting(this);
@@ -117,6 +112,9 @@ public class robotTeam {
             } else {
             	/** If the robot is not at the mailroom floor yet, then move towards it! */
                 moveTowards(Building.MAILROOM_LOCATION);
+                /* maybe we need this
+                if(current_floor == Math.round(current_floor)) {
+                }*/
             	break;
             }
 		case WAITING:
@@ -125,7 +123,9 @@ public class robotTeam {
             	receivedDispatch = false;
             	deliveryCounter = 0; // reset delivery counter
     			setRoute();
-            	changeState(RobotState.DELIVERING);
+    			for(int i=0; i < teamSize;i++) {
+    				changeState(team.get(i),RobotState.DELIVERING);
+    			}
             }
             break;
 		case DELIVERING:
@@ -138,15 +138,25 @@ public class robotTeam {
                 	throw new ExcessiveDeliveryException();
                 }
                 /** Check if want to return, i.e. if there is no item in the tube*/
-                if(tube == null){
-                	changeState(RobotState.RETURNING);
-                }
-                else{
-                    /** If there is another item, set the robot's route to the location to deliver the item */
-                    deliveryItem = tube;
-                    tube = null;
-                    setRoute();
-                    changeState(RobotState.DELIVERING);
+                for(int i=0; i < teamSize;i++) {
+                	if(team.get(i).get_tube() == null){
+                		changeState(team.get(i),RobotState.RETURNING);
+                		/*Need to assign to add to pool thing 
+                		taskAssigner.addTeam(new robotTeam(team.get(i)));
+                		*/
+                	}else{
+                        /** If there is another item, set the robot's route to the location to deliver the item */
+                    	setTeamSize();
+                        deliveryItem = tube;
+                        tube = null;
+                        setRoute();
+                        for(int j=0; j < teamSize;j++) {
+                        	changeState(team.get(j),RobotState.DELIVERING);
+                        	/*Need to assign to add to pool thing 
+                    		taskAssigner.addTeam(new robotTeam(team.get(i)));
+                    		*/
+                        }
+                    }
                 }
 			} else {
         		/** The robot is not at the destination yet, move towards it! */
@@ -172,6 +182,9 @@ public class robotTeam {
     	} else {
     		current_floor -= speed;
     	}
+    	for(int i = 0; i < teamSize; i++) {
+    		team.get(i).set_current_floor(current_floor);
+    	}
     }
 
     
@@ -187,9 +200,10 @@ public class robotTeam {
     
     /**
      * Prints out the change in state
+     * @param robot 
      * @param nextState the state to which the robot is transitioning
      */
-    private void changeState(RobotState nextState){
+    private void changeState(Robot robot, RobotState nextState){
     	assert(!(deliveryItem == null && tube != null));
     	if (current_state != nextState) {
     		System.out.printf("T: %3d > %7s changed from %s to %s%n", Clock.Time(), getIdTube(), current_state, nextState);
@@ -199,10 +213,6 @@ public class robotTeam {
     		System.out.printf("T: %3d > %7s-> [%s]%n", Clock.Time(), getIdTube(), deliveryItem.toString());
     	}
     }
-
-	public MailItem getTube() {
-		return )tube;
-	}
     
 	static private int count = 0;
 	static private Map<Integer, Integer> hashMap = new TreeMap<Integer, Integer>();
@@ -216,7 +226,7 @@ public class robotTeam {
 	}
 
 	public boolean isEmpty() {
-		return (deliveryItem == null && tube == null);
+		return (deliveryItem == null);
 	}
 
 	public void addToHand(MailItem mailItem){
