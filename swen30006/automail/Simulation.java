@@ -1,3 +1,4 @@
+
 package automail;
 
 import exceptions.ExcessiveDeliveryException;
@@ -71,7 +72,6 @@ public class Simulation {
 		assert(robots > 0);
 		// MailPool
 		IMailPool mailPool = new MailPool(robots);
-
 		// End properties
 		
         MAIL_DELIVERED = new ArrayList<MailItem>();
@@ -101,8 +101,10 @@ public class Simulation {
         	// System.out.printf("Delivered: %4d; Created: %4d%n", MAIL_DELIVERED.size(), mailGenerator.MAIL_TO_CREATE);
             mailGenerator.step();
             try {
-                automail.mailPool.step();
-				for (int i=0; i<robots; i++) automail.robots[i].step();
+                automail.robotLoader.step();
+				for (int i=0; i < automail.robotLoader.robotTeamList.size(); i++) { 
+					automail.robotLoader.robotTeamList.get(i).step();
+				}
 			} catch (ExcessiveDeliveryException|ItemTooHeavyException e) {
 				e.printStackTrace();
 				System.out.println("Simulation unable to complete.");
