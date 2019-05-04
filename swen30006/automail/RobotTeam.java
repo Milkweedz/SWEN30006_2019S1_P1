@@ -199,9 +199,25 @@ public class RobotTeam {
      */
     private void moveTowards(int destination) {
     	if(current_floor < destination){
-            current_floor++;
+    		if (speed == 3) {
+    			if (count % 3 == 0) {
+    				current_floor++;
+    			}
+    		count++;
+    		}
+    		else {
+    			current_floor++;
+    		}
         } else {
-            current_floor--;
+        	if (speed == 3) {
+    			if (count % 3 == 0) {
+    				current_floor--;
+    			}
+    		count++;
+    		}
+    		else {
+    			current_floor--;
+    		}
         }
         
     }
